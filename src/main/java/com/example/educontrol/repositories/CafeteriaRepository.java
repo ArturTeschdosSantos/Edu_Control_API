@@ -4,7 +4,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.example.educontrol.student.Student;
+import com.example.educontrol.cafeteria.Cafeteria;
 
-public interface CafeteriaRepository extends JpaRepository<Student, UUID> {
+public interface CafeteriaRepository extends JpaRepository<Cafeteria, UUID> {
 }
