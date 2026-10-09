@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDU Control - Controle de Cafeteria</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #0066cc; --secondary: #00c9ff; --success: #28a745;
+            --danger: #dc3545; --warning: #ffc107; --light: #f8f9fa; --dark: #212529;
+            --radius: 8px; --shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--dark); min-height: 100vh; padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: white; padding: 30px; border-radius: var(--radius);
+            box-shadow: var(--shadow); margin-bottom: 30px; text-align: center; }
+        .header h1 { color: var(--primary); font-size: 2.5em; margin-bottom: 10px; }
+        .header p { color: #666; font-size: 1.1em; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+        .tab-btn { padding: 12px 24px; border: none; background: white; color: var(--primary);
+            cursor: pointer; border-radius: var(--radius); font-weight: 600; transition: all 0.3s;
+            box-shadow: var(--shadow); }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .tab-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,102,204,0.3); }
+        .tab-content { display: none; background: white; padding: 30px; border-radius: var(--radius);
+            box-shadow: var(--shadow); }
+        .tab-content.active { display: block; animation: slideIn 0.3s; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); } }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--dark); }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: var(--radius);
+            font-size: 1em; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none; border-color: var(--primary); box-shadow: 0 0 5px rgba(0,102,204,0.2); }
+        .btn { padding: 12px 24px; border: none; border-radius: var(--radius); cursor: pointer;
+            font-weight: 600; transition: all 0.3s; font-size: 1em; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #0052a3; transform: translateY(-2px); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #218838; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #c82333; }
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .table thead { background: var(--light); }
+        .table th, .table td { padding: 15px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+        .table th { font-weight: 600; color: var(--primary); }
+        .table tbody tr:hover { background: var(--light); }
+        .badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 600; }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .alert { padding: 15px; border-radius: var(--radius); margin-bottom: 20px; display: none; }
+        .alert.show { display: block; animation: slideIn 0.3s; }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .alert-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .actions button { flex: 1; min-width: 100px; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white;
+            padding: 20px; border-radius: var(--radius); text-align: center; }
+        .stat-card h3 { font-size: 2em; margin-bottom: 10px; }
+        .stat-card p { opacity: 0.9; }
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.8em; }
+            .tabs { flex-direction: column; }
+            .tab-btn { width: 100%; }
+            .form-row { grid-template-columns: 1fr; }
+            .table { font-size: 0.9em; }
+            .table th, .table td { padding: 10px; }
+            .actions { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍽️ EDU Control</h1>
+            <p>Sistema de Controle de Entrada e Saída - Cafeteria Escolar</p>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('entrada')">📥 Entrada/Saída</button>
+            <button class="tab-btn" onclick="switchTab('estudantes')">👥 Estudantes</button>
+            <button class="tab-btn" onclick="switchTab('cafeterias')">🏢 Cafeterias</button>
+            <button class="tab-btn" onclick="switchTab('relatorios')">📊 Relatórios</button>
+        </div>
+
+        <div id="entrada" class="tab-content active">
+            <h2>Registro de Entrada e Saída</h2>
+            <div class="stats" id="statsContainer"></div>
+            <div style="margin-bottom: 30px;">
+                <h3>Registrar Entrada</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Matrícula do Estudante</label>
+                        <input type="text" id="registrationInput" placeholder="Digite a matrícula">
+                    </div>
+                    <div class="form-group">
+                        <label>Cafeteria</label>
+                        <select id="cafeteriaSelect"></select>
+                    </div>
+                    <div style="display: flex; align-items: flex-end; gap: 10px;">
+                        <button class="btn btn-success" onclick="registerEntry()" style="flex: 1;">Registrar Entrada</button>
+                    </div>
+                </div>
+            </div>
+            <h3>Entradas Ativas</h3>
+            <div id="entriesContainer"></div>
+        </div>
+
+        <div id="estudantes" class="tab-content">
+            <h2>Gerenciar Estudantes</h2>
+            <div style="margin-bottom: 30px;">
+                <h3>Adicionar Novo Estudante</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome</label>
+                        <input type="text" id="studentName" placeholder="Nome do estudante">
+                    </div>
+                    <div class="form-group">
+                        <label>Matrícula</label>
+                        <input type="text" id="studentRegistration" placeholder="Matrícula única">
+                    </div>
+                    <div class="form-group">
+                        <label>Turma</label>
+                        <input type="text" id="studentClassroom" placeholder="Ex: 1º A">
+                    </div>
+                    <div class="form-group">
+                        <label>Período</label>
+                        <select id="studentPeriod">
+                            <option>MORNING</option>
+                            <option>AFTERNOON</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="addStudent()">Adicionar Estudante</button>
+            </div>
+            <h3>Lista de Estudantes</h3>
+            <div id="studentsContainer"></div>
+        </div>
+
+        <div id="cafeterias" class="tab-content">
+            <h2>Gerenciar Cafeterias</h2>
+            <div style="margin-bottom: 30px;">
+                <h3>Adicionar Nova Cafeteria</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome</label>
+                        <input type="text" id="cafeteriaName" placeholder="Nome da cafeteria">
+                    </div>
+                    <div class="form-group">
+                        <label>Localização</label>
+                        <input type="text" id="cafeteriaLocation" placeholder="Localização">
+                    </div>
+                    <div class="form-group">
+                        <label>Horário de Abertura</label>
+                        <input type="time" id="cafeteriaOpening">
+                    </div>
+                    <div class="form-group">
+                        <label>Horário de Fechamento</label>
+                        <input type="time" id="cafeteriaClosing">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="addCafeteria()">Adicionar Cafeteria</button>
+            </div>
+            <h3>Lista de Cafeterias</h3>
+            <div id="cafeteriasContainer"></div>
+        </div>
+
+        <div id="relatorios" class="tab-content">
+            <h2>Relatórios e Estatísticas</h2>
+            <div id="reportsContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8081/api';
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            if (tabName === 'estudantes') loadStudents();
+            if (tabName === 'cafeterias') loadCafeterias();
+            if (tabName === 'entrada') { loadEntries(); loadStats(); }
+            if (tabName === 'relatorios') loadReports();
+        }
+
+        function showAlert(message, type = 'info') {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} show`;
+            alert.textContent = message;
+            container.appendChild(alert);
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        async function fetchAPI(endpoint, method = 'GET', data = null) {
+            try {
+                const options = { method, headers: { 'Content-Type': 'application/json' } };
+                if (data) options.body = JSON.stringify(data);
+                const response = await fetch(`${API_BASE}${endpoint}`, options);
+                const result = await response.json();
+                if (!response.ok) {
+                    showAlert(result.error || 'Erro na operação', 'danger');
+                    return null;
+                }
+                return result.data;
+            } catch (error) {
+                showAlert('Erro ao conectar: ' + error.message, 'danger');
+                return null;
+            }
+        }
+
+        async function registerEntry() {
+            const registration = document.getElementById('registrationInput').value;
+            const cafeteriaId = document.getElementById('cafeteriaSelect').value;
+            if (!registration || !cafeteriaId) {
+                showAlert('Preencha todos os campos', 'warning');
+                return;
+            }
+            try {
+                const student = await fetchAPI(`/students/registration/${registration}`);
+                if (!student) return;
+                const entry = await fetchAPI(`/entries?studentId=${student.id}&cafeteriaId=${cafeteriaId}`, 'POST');
+                if (entry) {
+                    showAlert('Entrada registrada com sucesso!', 'success');
+                    document.getElementById('registrationInput').value = '';
+                    loadEntries();
+                    loadStats();
+                }
+            } catch (error) {
+                showAlert('Erro: ' + error.message, 'danger');
+            }
+        }
+
+        async function registerExit(entryId) {
+            const entry = await fetchAPI(`/entries/${entryId}/exit`, 'POST');
+            if (entry) {
+                showAlert('Saída registrada com sucesso!', 'success');
+                loadEntries();
+                loadStats();
+            }
+        }
+
+        async function loadEntries() {
+            const entries = await fetchAPI('/entries');
+            const container = document.getElementById('entriesContainer');
+            if (!entries || entries.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999;">Nenhuma entrada registrada</p>';
+                return;
+            }
+            let html = '<table class="table"><thead><tr><th>Estudante</th><th>Cafeteria</th><th>Entrada</th><th>Saída</th><th>Status</th><th>Ações</th></tr></thead><tbody>';
+            entries.forEach(entry => {
+                const entryTime = new Date(entry.entryTime).toLocaleString('pt-BR');
+                const exitTime = entry.exitTime ? new Date(entry.exitTime).toLocaleString('pt-BR') : '-';
+                const status = entry.completed ? '✓ Finalizado' : '⏱️ Ativo';
+                const statusBadge = entry.completed ? 'badge-success' : 'badge-warning';
+                html += `<tr><td>${entry.student.name}</td><td>${entry.cafeteria.name}</td><td>${entryTime}</td><td>${exitTime}</td><td><span class="badge ${statusBadge}">${status}</span></td><td><div class="actions">${!entry.completed ? `<button class="btn btn-primary" onclick="registerExit('${entry.id}')">Saída</button>` : ''}<button class="btn btn-danger" onclick="deleteEntry('${entry.id}')">Deletar</button></div></td></tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        async function deleteEntry(id) {
+            if (confirm('Deletar este registro?')) {
+                await fetchAPI(`/entries/${id}`, 'DELETE');
+                showAlert('Registro deletado', 'success');
+                loadEntries();
+            }
+        }
+
+        async function loadStudents() {
+            const students = await fetchAPI('/students');
+            const container = document.getElementById('studentsContainer');
+            if (!students || students.length === 0) {
+                container.innerHTML = '<p>Nenhum estudante cadastrado</p>';
+                return;
+            }
+            let html = '<table class="table"><thead><tr><th>Nome</th><th>Matrícula</th><th>Turma</th><th>Período</th><th>Ações</th></tr></thead><tbody>';
+            students.forEach(s => {
+                html += `<tr><td>${s.name}</td><td>${s.registration}</td><td>${s.classroom || '-'}</td><td>${s.turn}</td><td><button class="btn btn-danger" onclick="deleteStudent('${s.id}')">Deletar</button></td></tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        async function addStudent() {
+            const student = {
+                name: document.getElementById('studentName').value,
+                registration: document.getElementById('studentRegistration').value,
+                classroom: document.getElementById('studentClassroom').value,
+                turn: document.getElementById('studentPeriod').value
+            };
+            if (!student.name || !student.registration) {
+                showAlert('Nome e matrícula são obrigatórios', 'warning');
+                return;
+            }
+            const result = await fetchAPI('/students', 'POST', student);
+            if (result) {
+                showAlert('Estudante adicionado com sucesso!', 'success');
+                document.getElementById('studentName').value = '';
+                document.getElementById('studentRegistration').value = '';
+                document.getElementById('studentClassroom').value = '';
+                loadStudents();
+                loadCafeterias();
+            }
+        }
+
+        async function deleteStudent(id) {
+            if (confirm('Deletar este estudante?')) {
+                await fetchAPI(`/students/${id}`, 'DELETE');
+                showAlert('Estudante deletado', 'success');
+                loadStudents();
+            }
+        }
+
+        async function loadCafeterias() {
+            const cafeterias = await fetchAPI('/cafeterias');
+            const container = document.getElementById('cafeteriasContainer');
+            const select = document.getElementById('cafeteriaSelect');
+            if (!cafeterias) return;
+            select.innerHTML = '';
+            cafeterias.forEach(c => {
+                select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+            });
+            let html = '<table class="table"><thead><tr><th>Nome</th><th>Localização</th><th>Abertura</th><th>Fechamento</th><th>Status</th><th>Ações</th></tr></thead><tbody>';
+            cafeterias.forEach(c => {
+                const status = c.active ? '✓ Ativa' : '✗ Inativa';
+                const statusBadge = c.active ? 'badge-success' : 'badge-danger';
+                html += `<tr><td>${c.name}</td><td>${c.location || '-'}</td><td>${c.openingTime || '-'}</td><td>${c.closingTime || '-'}</td><td><span class="badge ${statusBadge}">${status}</span></td><td><button class="btn btn-danger" onclick="deleteCafeteria('${c.id}')">Deletar</button></td></tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        async function addCafeteria() {
+            const cafeteria = {
+                name: document.getElementById('cafeteriaName').value,
+                location: document.getElementById('cafeteriaLocation').value,
+                openingTime: document.getElementById('cafeteriaOpening').value,
+                closingTime: document.getElementById('cafeteriaClosing').value,
+                active: true
+            };
+            if (!cafeteria.name) {
+                showAlert('Nome da cafeteria é obrigatório', 'warning');
+                return;
+            }
+            const result = await fetchAPI('/cafeterias', 'POST', cafeteria);
+            if (result) {
+                showAlert('Cafeteria adicionada com sucesso!', 'success');
+                document.getElementById('cafeteriaName').value = '';
+                document.getElementById('cafeteriaLocation').value = '';
+                loadCafeterias();
+            }
+        }
+
+        async function deleteCafeteria(id) {
+            if (confirm('Deletar esta cafeteria?')) {
+                await fetchAPI(`/cafeterias/${id}`, 'DELETE');
+                showAlert('Cafeteria deletada', 'success');
+                loadCafeterias();
+            }
+        }
+
+        async function loadStats() {
+            const entries = await fetchAPI('/entries');
+            if (!entries) return;
+            const total = entries.length;
+            const active = entries.filter(e => !e.completed).length;
+            const completed = entries.filter(e => e.completed).length;
+            const stats = `<div class="stat-card"><h3>${total}</h3><p>Total de Registros</p></div><div class="stat-card"><h3>${active}</h3><p>Entradas Ativas</p></div><div class="stat-card"><h3>${completed}</h3><p>Saídas Registradas</p></div>`;
+            document.getElementById('statsContainer').innerHTML = stats;
+        }
+
+        async function loadReports() {
+            const entries = await fetchAPI('/entries');
+            if (!entries) return;
+            const container = document.getElementById('reportsContainer');
+            const cafetStats = {};
+            entries.forEach(e => {
+                cafetStats[e.cafeteria.name] = (cafetStats[e.cafeteria.name] || 0) + 1;
+            });
+            let html = '<h3>Uso por Cafeteria</h3><table class="table"><tr><th>Cafeteria</th><th>Visitantes</th></tr>';
+            Object.entries(cafetStats).forEach(([name, count]) => {
+                html += `<tr><td>${name}</td><td><strong>${count}</strong></td></tr>`;
+            });
+            html += '</table>';
+            container.innerHTML = html;
+        }
+
+        window.addEventListener('load', () => {
+            loadCafeterias();
+            loadEntries();
+            loadStats();
+        });
+    </script>
+</body>
+</html>

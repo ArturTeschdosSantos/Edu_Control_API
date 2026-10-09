@@ -1,0 +1,12 @@
+package com.example.educontrol.repositories;
+
+import java.util.UUID;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.example.educontrol.entry.Entry;
+
+@Repository
+public interface EntryRepository extends JpaRepository<Entry, UUID> {
+}
